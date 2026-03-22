@@ -1,127 +1,160 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { marcasOrdenadasPorNombre, obtenerModelosDeMarca, vehiculos, modelos } from '../stores/tiendaRenting'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
+import {
+  obtenerClientes,
+  obtenerMarcas,
+  obtenerModelos,
+  obtenerVehiculos
+} from '../services/api'
 import NuevoVehiculo from '../components/NuevoVehiculo.vue'
+
+const marcas = ref([])
+const modelos = ref([])
+const vehiculos = ref([])
+const clientes = ref([])
 
 const idMarcaSeleccionada = ref('')
 const idModeloSeleccionado = ref('')
 const mostrarFormulario = ref(false)
 
-const modelosFiltrados = computed(() => {
-  if (!idMarcaSeleccionada.value) {
-    return []
-  }
+const error = ref('')
+async function cargarDatos() {
+  try {
+    const [m, mo, v, c] = await Promise.all([
+      obtenerMarcas(),
+      obtenerModelos(),
+      obtenerVehiculos(),
+      obtenerClientes()
+    ])
 
-  return obtenerModelosDeMarca(idMarcaSeleccionada.value)
+    marcas.value = m
+    modelos.value = mo
+    vehiculos.value = v
+    clientes.value = c
+  } catch {
+    error.value = 'Error al cargar vehículos'
+  }
+}
+function obtenerNombreModelo(idModelo) {
+  const modelo = modelos.value.find(
+    (m) => String(m.id) === String(idModelo)
+  )
+  return modelo ? modelo.modelo : ''
+}
+
+function clientesDeVehiculo(idVehiculo) {
+  return clientes.value.filter((cliente) =>
+    (cliente.alquileres || []).some(
+      (a) => String(a.idVehiculo) === String(idVehiculo)
+    )
+  )
+}
+const modelosDisponibles = computed(() => {
+  if (!idMarcaSeleccionada.value) return []
+
+  return modelos.value.filter(
+    (m) => String(m.idMarca) === String(idMarcaSeleccionada.value)
+  )
 })
 
 const vehiculosFiltrados = computed(() => {
+
   if (!idMarcaSeleccionada.value) {
     return vehiculos.value
   }
 
-  const idsModelosDeMarca = modelosFiltrados.value.map((modeloActual) => modeloActual.id)
+  const idsModelos = modelosDisponibles.value.map(m => String(m.id))
 
   if (!idModeloSeleccionado.value) {
-    return vehiculos.value.filter((vehiculoActual) =>
-      idsModelosDeMarca.includes(vehiculoActual.idModelo)
+    return vehiculos.value.filter(v =>
+      idsModelos.includes(String(v.idModelo))
     )
   }
 
   return vehiculos.value.filter(
-    (vehiculoActual) => vehiculoActual.idModelo === idModeloSeleccionado.value
+    (v) => String(v.idModelo) === String(idModeloSeleccionado.value)
   )
 })
-
-function obtenerNombreModelo(idModelo) {
-  const modeloEncontrado = modelos.value.find((modeloActual) => modeloActual.id === idModelo)
-  return modeloEncontrado ? modeloEncontrado.modelo : 'Modelo no encontrado'
+function recargar() {
+  cargarDatos()
 }
+
+onMounted(() => {
+  cargarDatos()
+})
 </script>
 
 <template>
   <section class="pagina">
     <h2>Vehículos</h2>
 
+    <p v-if="error">{{ error }}</p>
     <div class="filtros">
       <select v-model="idMarcaSeleccionada">
-        <option value="">Selecciona una marca</option>
-        <option
-          v-for="marca in marcasOrdenadasPorNombre"
-          :key="marca.id"
-          :value="marca.id"
-        >
-          {{ marca.nombre }}
+        <option value="">Marca</option>
+        <option v-for="m in marcas" :key="m.id" :value="m.id">
+          {{ m.nombre }}
         </option>
       </select>
 
-      <select
-        v-model="idModeloSeleccionado"
-        :disabled="!idMarcaSeleccionada"
-      >
-        <option value="">Selecciona un modelo</option>
-        <option
-          v-for="modelo in modelosFiltrados"
-          :key="modelo.id"
-          :value="modelo.id"
-        >
-          {{ modelo.modelo }}
+      <select v-model="idModeloSeleccionado" :disabled="!idMarcaSeleccionada">
+        <option value="">Modelo</option>
+        <option v-for="m in modelosDisponibles" :key="m.id" :value="m.id">
+          {{ m.modelo }}
         </option>
       </select>
     </div>
+    <ul>
+      <li v-for="v in vehiculosFiltrados" :key="v.id">
 
-    <ul class="lista">
-      <li v-for="vehiculo in vehiculosFiltrados" :key="vehiculo.id">
-        {{ obtenerNombreModelo(vehiculo.idModelo) }} - {{ vehiculo.precioDia }} €/día
+        <strong>{{ obtenerNombreModelo(v.idModelo) }}</strong>
+        - {{ v.precioDia }} €/día
+
+        <ul>
+          <li v-for="c in clientesDeVehiculo(v.id)" :key="c.id">
+            {{ c.nombre }} - {{ c.dni }}
+          </li>
+        </ul>
+
       </li>
     </ul>
-
-    <button type="button" @click="mostrarFormulario = !mostrarFormulario">
-      {{ mostrarFormulario ? 'Ocultar Nuevo Vehículo' : 'Mostrar Nuevo Vehículo' }}
+    <button @click="mostrarFormulario = !mostrarFormulario">
+      {{ mostrarFormulario ? 'Ocultar' : 'Nuevo Vehículo' }}
     </button>
 
-    <div v-if="mostrarFormulario" class="zona-formulario">
+    <RouterLink
+      :to="{
+        path: '/nuevo-vehiculo',
+        query: {
+          marca: idMarcaSeleccionada,
+          modelo: idModeloSeleccionado
+        }
+      }"
+    >
+    Ir a un nuevo vehículo
+    </RouterLink>
+    <div v-if="mostrarFormulario">
       <NuevoVehiculo
-        :marca-preseleccionada="idMarcaSeleccionada"
-        :modelo-preseleccionado="idModeloSeleccionado"
+        :marca-inicial="idMarcaSeleccionada"
+        :modelo-inicial="idModeloSeleccionado"
         :bloquear-seleccion="Boolean(idMarcaSeleccionada && idModeloSeleccionado)"
+        @vehiculo-creado="recargar"
       />
     </div>
+
   </section>
 </template>
 
 <style scoped>
 .pagina {
-  background-color: black;
-  padding: 24px;
-  border-radius: 8px;
+  background: black;
+  padding: 20px;
 }
 
 .filtros {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 20px;
-}
-
-.filtros select {
-  padding: 8px;
-}
-
-.lista {
-  padding-left: 18px;
-  margin-bottom: 20px;
-}
-
-button {
-  padding: 10px 14px;
-  border: none;
-  background-color: #243447;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.zona-formulario {
-  margin-top: 18px;
 }
 </style>

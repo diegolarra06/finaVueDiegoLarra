@@ -1,7 +1,7 @@
 <script setup>
 import { RouterLink } from 'vue-router'
 
-const enlacesMenu = [
+const opcionesMenu = [
   { ruta: '/', texto: 'Inicio' },
   { ruta: '/marcas', texto: 'Marcas' },
   { ruta: '/nueva-marca', texto: 'Nueva Marca' },
@@ -13,62 +13,38 @@ const enlacesMenu = [
   { ruta: '/clientes', texto: 'Clientes' }
 ]
 </script>
-
 <template>
-  <aside class="menu-lateral">
-    <h1 class="titulo-aplicacion">Renting Sur</h1>
-
-    <nav class="contenedor-enlaces">
+  <aside class="menu">
+    <h2>Renting</h2>
+    <nav>
       <RouterLink
-        v-for="enlace in enlacesMenu"
-        :key="enlace.ruta"
-        :to="enlace.ruta"
-        class="enlace-menu"
+        v-for="opcion in opcionesMenu"
+        :key="opcion.ruta"
+        :to="opcion.ruta"
+        class="link"
       >
-        {{ enlace.texto }}
+        {{ opcion.texto }}
       </RouterLink>
     </nav>
   </aside>
 </template>
-
 <style scoped>
-.menu-lateral {
+.menu {
   position: fixed;
-  top: 0;
-  left: 0;
   width: 240px;
   height: 100vh;
-  padding: 20px 16px;
   background-color: #243447;
   color: white;
+  padding: 20px;
 }
-
-.titulo-aplicacion {
-  margin: 0 0 24px;
-  text-align: center;
-  font-size: 28px;
-}
-
-.contenedor-enlaces {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.enlace-menu {
+.link {
   display: block;
-  padding: 11px 12px;
-  border-radius: 8px;
+  margin: 10px 0;
   color: white;
   text-decoration: none;
 }
-
-.enlace-menu:hover {
-  background-color: #31485f;
-}
-
-.enlace-menu.router-link-exact-active {
-  background-color: #17a589;
+.link.router-link-exact-active {
   font-weight: bold;
+  color: #1abc9c;
 }
 </style>

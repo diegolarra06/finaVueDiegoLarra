@@ -10,7 +10,7 @@ async function peticion(url, opciones = {}) {
   return await respuesta.json()
 }
 
-// GET
+
 export async function obtenerMarcas() {
   return await peticion(`${URL_BASE}/marcas`)
 }
@@ -28,7 +28,7 @@ export async function obtenerClientes() {
 }
 
 
-export async function crearMarcaAPI(marca) {
+export async function crearMarca(marca) {
   return await peticion(`${URL_BASE}/marcas`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -36,7 +36,7 @@ export async function crearMarcaAPI(marca) {
   })
 }
 
-export async function crearModeloAPI(modelo) {
+export async function crearModelo(modelo) {
   return await peticion(`${URL_BASE}/modelos`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -44,7 +44,7 @@ export async function crearModeloAPI(modelo) {
   })
 }
 
-export async function crearVehiculoAPI(vehiculo) {
+export async function crearVehiculo(vehiculo) {
   return await peticion(`${URL_BASE}/vehiculos`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -52,7 +52,7 @@ export async function crearVehiculoAPI(vehiculo) {
   })
 }
 
-export async function crearClienteAPI(cliente) {
+export async function crearCliente(cliente) {
   return await peticion(`${URL_BASE}/clientes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -61,7 +61,7 @@ export async function crearClienteAPI(cliente) {
 }
 
 
-export async function actualizarModeloAPI(idModelo, datosModelo) {
+export async function actualizarModelo(idModelo, datosModelo) {
   return await peticion(`${URL_BASE}/modelos/${idModelo}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -69,7 +69,7 @@ export async function actualizarModeloAPI(idModelo, datosModelo) {
   })
 }
 
-export async function actualizarClienteAPI(idCliente, datosCliente) {
+export async function actualizarCliente(idCliente, datosCliente) {
   return await peticion(`${URL_BASE}/clientes/${idCliente}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -78,7 +78,7 @@ export async function actualizarClienteAPI(idCliente, datosCliente) {
 }
 
 
-export async function eliminarClienteAPI(idCliente) {
+export async function eliminarCliente(idCliente) {
   return await peticion(`${URL_BASE}/clientes/${idCliente}`, {
     method: 'DELETE'
   })

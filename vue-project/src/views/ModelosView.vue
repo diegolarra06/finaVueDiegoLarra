@@ -1,141 +1,131 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import {
-  actualizarModeloAPI,
   obtenerMarcas,
   obtenerModelos,
-  obtenerVehiculos
+  obtenerVehiculos,
+  actualizarModelo
 } from '../services/api'
 
 const marcas = ref([])
 const modelos = ref([])
 const vehiculos = ref([])
+
 const idMarcaSeleccionada = ref('')
-const extrasTemporales = ref({})
+const extras = ref({})
 const mensaje = ref('')
 const error = ref('')
 
 function calcularPrecioMedioModelo(idModelo) {
-  const vehiculosDelModelo = vehiculos.value.filter(
-    (vehiculo) => vehiculo.idModelo === idModelo
+  const lista = vehiculos.value.filter(
+    (v) => String(v.idModelo) === String(idModelo)
   )
 
-  if (vehiculosDelModelo.length === 0) {
-    return 0
-  }
+  if (lista.length === 0) return 0
 
-  const sumaPrecios = vehiculosDelModelo.reduce(
-    (acumulado, vehiculo) => acumulado + Number(vehiculo.precioDia),
+  const suma = lista.reduce(
+    (acc, v) => acc + Number(v.precioDia),
     0
   )
 
-  return sumaPrecios / vehiculosDelModelo.length
+  return suma / lista.length
 }
 
-const modelosDeMarca = computed(() => {
-  if (!idMarcaSeleccionada.value) {
-    return []
+async function cargarDatos() {
+  try {
+    const [m, mo, v] = await Promise.all([
+      obtenerMarcas(),
+      obtenerModelos(),
+      obtenerVehiculos()
+    ])
+
+    marcas.value = m
+    modelos.value = mo
+    vehiculos.value = v
+  } catch {
+    error.value = 'Error al cargar modelos'
   }
+}
 
-  return modelos.value.filter(
-    (modelo) => modelo.idMarca === idMarcaSeleccionada.value
-  )
+const modelosFiltrados = computed(() => {
+  if (!idMarcaSeleccionada.value) return []
+
+  return modelos.value
+    .filter((m) => String(m.idMarca) === String(idMarcaSeleccionada.value))
+    .map((m) => ({
+      ...m,
+      precioMedio: calcularPrecioMedioModelo(m.id)
+    }))
 })
-
-async function guardarExtra(idModelo) {
-  error.value = ''
+async function guardarExtra(modelo) {
   mensaje.value = ''
+  error.value = ''
 
-  const nuevoExtra = extrasTemporales.value[idModelo]
+  const nuevoExtra = extras.value[modelo.id]
 
-  if (nuevoExtra === '' || nuevoExtra === undefined) {
-    error.value = 'Introduce un precio extra.'
+  if (nuevoExtra === '' || nuevoExtra < 0) {
+    error.value = 'Extra inválido'
     return
   }
 
   try {
-    await actualizarModeloAPI(idModelo, {
+    await actualizarModelo(modelo.id, {
       extraPorModelo: Number(nuevoExtra)
     })
 
+    mensaje.value = 'Extra actualizado'
     await cargarDatos()
-    mensaje.value = 'Extra actualizado correctamente.'
   } catch {
-    error.value = 'No se pudo actualizar el extra.'
+    error.value = 'Error al actualizar'
   }
 }
 
-async function cargarDatos() {
-  const [datosMarcas, datosModelos, datosVehiculos] = await Promise.all([
-    obtenerMarcas(),
-    obtenerModelos(),
-    obtenerVehiculos()
-  ])
-
-  marcas.value = datosMarcas
-  modelos.value = datosModelos
-  vehiculos.value = datosVehiculos
-}
-
-onMounted(cargarDatos)
+onMounted(() => {
+  cargarDatos()
+})
 </script>
 
 <template>
   <section class="pagina">
     <h2>Modelos</h2>
 
-    <div class="selector-centro">
-      <select v-model="idMarcaSeleccionada">
-        <option value="">Selecciona una marca</option>
-        <option v-for="marca in marcas" :key="marca.id" :value="marca.id">
-          {{ marca.nombre }}
-        </option>
-      </select>
-    </div>
+    <select v-model="idMarcaSeleccionada">
+      <option value="">Selecciona marca</option>
+      <option v-for="m in marcas" :key="m.id" :value="m.id">
+        {{ m.nombre }}
+      </option>
+    </select>
 
-    <p v-if="error">{{ error }}</p>
-    <p v-if="mensaje">{{ mensaje }}</p>
+    <ul v-if="modelosFiltrados.length">
+      <li v-for="m in modelosFiltrados" :key="m.id">
 
-    <ul v-if="modelosDeMarca.length" class="lista">
-      <li v-for="modelo in modelosDeMarca" :key="modelo.id">
-        <strong>{{ modelo.modelo }}</strong>
-        -
-        {{ calcularPrecioMedioModelo(modelo.id).toFixed(2) }} €/día
-        -
-        <template v-if="Number(modelo.extraPorModelo) > 0">
-          {{ modelo.extraPorModelo }} €
+        <template v-if="m.extraPorModelo > 0">
+          {{ m.modelo }} - {{ m.precioMedio.toFixed(2) }} €/día - {{ m.extraPorModelo }} €
         </template>
+
         <template v-else>
-          <input
-            v-model="extrasTemporales[modelo.id]"
-            type="number"
-            min="0"
-            placeholder="Extra"
-          />
-          <button type="button" @click="guardarExtra(modelo.id)">
-            Guardar extra
+          {{ m.modelo }} - {{ m.precioMedio.toFixed(2) }} €/día
+
+          <input v-model="extras[m.id]" type="number" placeholder="Extra" />
+
+          <button @click="guardarExtra(m)">
+            Guardar
           </button>
         </template>
+
       </li>
     </ul>
 
-    <p v-else>Selecciona una marca para ver sus modelos.</p>
+    <p v-else>Selecciona una marca</p>
+
+    <p v-if="mensaje">{{ mensaje }}</p>
+    <p v-if="error">{{ error }}</p>
   </section>
 </template>
 
 <style scoped>
 .pagina {
-  background-color: white;
-  padding: 24px;
-  border-radius: 8px;
-}
-
-.selector-centro {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.lista {
-  padding-left: 18px;
+  background: black;
+  padding: 20px;
 }
 </style>

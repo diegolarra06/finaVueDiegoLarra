@@ -1,3 +1,6 @@
+/*La carpeta "stores" que se utiliza para centralizar la lógica y el estado de la aplicación. 
+He creado "tiendaRenting.js" para gestionar datos como marcas y modelos, evitando duplicar código en las vistas. 
+Contiene funciones y variables que pueden ser reutilizadas en distintos componentes. */
 import { ref, computed } from 'vue'
 
 const marcas = ref([

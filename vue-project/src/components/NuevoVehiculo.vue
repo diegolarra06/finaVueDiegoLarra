@@ -1,17 +1,13 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
-import {
-  marcasOrdenadasPorNombre,
-  modelos,
-  crearVehiculo
-} from '../stores/tiendaRenting'
+import { computed, onMounted, ref, watch } from 'vue'
+import { obtenerMarcas, obtenerModelos, crearVehiculo } from '../services/api'
 
 const props = defineProps({
-  marcaPreseleccionada: {
+  marcaInicial: {
     type: String,
     default: ''
   },
-  modeloPreseleccionado: {
+  modeloInicial: {
     type: String,
     default: ''
   },
@@ -23,173 +19,144 @@ const props = defineProps({
 
 const emit = defineEmits(['vehiculo-creado'])
 
-const idMarcaSeleccionada = ref(props.marcaPreseleccionada)
-const idModeloSeleccionado = ref(props.modeloPreseleccionado)
+const marcas = ref([])
+const modelos = ref([])
+const idMarca = ref(props.marcaInicial)
+const idModelo = ref(props.modeloInicial)
 const precioDia = ref('')
-const puertas = ref(5)
+const puertas = ref('')
 const sillaInfantil = ref(false)
-const mensajeConfirmacion = ref('')
+const mensaje = ref('')
+const error = ref('')
 
-const modelosDisponibles = computed(() => {
-  if (!idMarcaSeleccionada.value) {
+async function cargarDatos() {
+  try {
+    const [datosMarcas, datosModelos] = await Promise.all([
+      obtenerMarcas(),
+      obtenerModelos()
+    ])
+
+    marcas.value = datosMarcas
+    modelos.value = datosModelos
+  } catch (e) {
+    error.value = 'No se han podido cargar las opciones del formulario.'
+  }
+}
+
+const modelosDeLaMarca = computed(() => {
+  if (!idMarca.value) {
     return []
   }
 
   return modelos.value.filter(
-    (modeloActual) => modeloActual.idMarca === idMarcaSeleccionada.value
+    (modelo) => String(modelo.idMarca) === String(idMarca.value)
   )
 })
 
-watch(idMarcaSeleccionada, () => {
+watch(idMarca, () => {
   if (!props.bloquearSeleccion) {
-    idModeloSeleccionado.value = ''
+    idModelo.value = ''
   }
 })
 
-function guardarVehiculo() {
-  if (!idMarcaSeleccionada.value || !idModeloSeleccionado.value || !precioDia.value || !puertas.value) {
-    mensajeConfirmacion.value = 'Completa todos los campos obligatorios.'
-    return
-  }
-
-  const vehiculoCreado = crearVehiculo({
-    idModelo: idModeloSeleccionado.value,
-    precioDia: precioDia.value,
-    puertas: puertas.value,
-    sillaInfantil: sillaInfantil.value
-  })
-
-  mensajeConfirmacion.value = `Vehículo creado con id ${vehiculoCreado.id}.`
-  emit('vehiculo-creado', vehiculoCreado)
-
+function limpiarFormulario() {
   if (!props.bloquearSeleccion) {
-    idMarcaSeleccionada.value = ''
-    idModeloSeleccionado.value = ''
+    idMarca.value = ''
+    idModelo.value = ''
   }
 
   precioDia.value = ''
-  puertas.value = 5
+  puertas.value = ''
   sillaInfantil.value = false
 }
+
+async function guardarVehiculo() {
+  mensaje.value = ''
+  error.value = ''
+
+  if (!idMarca.value || !idModelo.value || !precioDia.value || !puertas.value) {
+    error.value = 'Completa todos los campos obligatorios.'
+    return
+  }
+
+  try {
+    const vehiculoGuardado = await crearVehiculo({
+      idModelo: String(idModelo.value),
+      precioDia: Number(precioDia.value),
+      puertas: Number(puertas.value),
+      sillaInfantil: Boolean(sillaInfantil.value)
+    })
+
+    mensaje.value = `Vehículo creado con id ${vehiculoGuardado.id}.`
+    limpiarFormulario()
+    emit('vehiculo-creado')
+  } catch (e) {
+    error.value = 'No se ha podido guardar el vehículo.'
+  }
+}
+
+onMounted(() => {
+  cargarDatos()
+})
 </script>
 
 <template>
   <section class="bloque-formulario">
     <h3>Nuevo Vehículo</h3>
 
-    <div class="grupo-campo">
-      <label for="marca">Marca</label>
-      <select
-        id="marca"
-        v-model="idMarcaSeleccionada"
-        :disabled="bloquearSeleccion"
-      >
+    <label>
+      Marca
+      <select v-model="idMarca" :disabled="bloquearSeleccion">
         <option value="">Selecciona una marca</option>
-        <option
-          v-for="marca in marcasOrdenadasPorNombre"
-          :key="marca.id"
-          :value="marca.id"
-        >
+        <option v-for="marca in marcas" :key="marca.id" :value="marca.id">
           {{ marca.nombre }}
         </option>
       </select>
-    </div>
+    </label>
 
-    <div class="grupo-campo">
-      <label for="modelo">Modelo</label>
+    <label>
+      Modelo
       <select
-        id="modelo"
-        v-model="idModeloSeleccionado"
-        :disabled="bloquearSeleccion || !idMarcaSeleccionada"
+        v-model="idModelo"
+        :disabled="bloquearSeleccion || !idMarca"
       >
         <option value="">Selecciona un modelo</option>
-        <option
-          v-for="modelo in modelosDisponibles"
-          :key="modelo.id"
-          :value="modelo.id"
-        >
+        <option v-for="modelo in modelosDeLaMarca" :key="modelo.id" :value="modelo.id">
           {{ modelo.modelo }}
         </option>
       </select>
-    </div>
+    </label>
 
-    <div class="grupo-campo">
-      <label for="precioDia">Precio por día</label>
-      <input
-        id="precioDia"
-        v-model="precioDia"
-        type="number"
-        min="1"
-      />
-    </div>
+    <label>
+      Precio por día
+      <input v-model="precioDia" type="number" min="1" />
+    </label>
 
-    <div class="grupo-campo">
-      <label for="puertas">Puertas</label>
-      <input
-        id="puertas"
-        v-model="puertas"
-        type="number"
-        min="2"
-      />
-    </div>
+    <label>
+      Puertas
+      <input v-model="puertas" type="number" min="2" />
+    </label>
 
-    <div class="grupo-checkbox">
-      <input
-        id="sillaInfantil"
-        v-model="sillaInfantil"
-        type="checkbox"
-      />
-      <label for="sillaInfantil">Incluye silla infantil</label>
-    </div>
+    <label>
+      <input v-model="sillaInfantil" type="checkbox" />
+      Silla infantil
+    </label>
 
-    <button type="button" @click="guardarVehiculo">
-      Guardar vehículo
-    </button>
+    <button type="button" @click="guardarVehiculo">Guardar vehículo</button>
 
-    <p v-if="mensajeConfirmacion" class="mensaje">
-      {{ mensajeConfirmacion }}
-    </p>
+    <p v-if="mensaje">{{ mensaje }}</p>
+    <p v-if="error">{{ error }}</p>
   </section>
 </template>
 
 <style scoped>
 .bloque-formulario {
-  max-width: 420px;
-  padding: 18px;
   background-color: white;
+  padding: 20px;
   border-radius: 8px;
-}
-
-.grupo-campo {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.grupo-campo input,
-.grupo-campo select {
-  padding: 8px;
-}
-
-.grupo-checkbox {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
-button {
-  padding: 10px 14px;
-  border: none;
-  background-color: #243447;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.mensaje {
-  margin-top: 12px;
-  color: #1f6f4a;
+  gap: 12px;
+  max-width: 420px;
 }
 </style>

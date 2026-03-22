@@ -1,84 +1,88 @@
 <script setup>
-import { ref } from 'vue'
-import { marcasOrdenadasPorNombre, crearModelo } from '../stores/tiendaRenting'
+import { onMounted, ref } from 'vue'
+import { crearModelo, obtenerMarcas } from '../services/api'
 
+const marcas = ref([])
 const idMarca = ref('')
 const nombreModelo = ref('')
-const extra = ref('')
+const extraPorModelo = ref('')
 const mensaje = ref('')
 const error = ref('')
 
-function guardarModelo() {
-
-  error.value = ''
-  mensaje.value = ''
-
-  if (!idMarca.value) {
-    error.value = 'Debes seleccionar una marca'
-    return
+async function cargarMarcas() {
+  try {
+    marcas.value = await obtenerMarcas()
+  } catch (e) {
+    error.value = 'No se han podido cargar las marcas.'
   }
-
-  if (!nombreModelo.value.trim()) {
-    error.value = 'El nombre del modelo es obligatorio'
-    return
-  }
-
-  const modeloCreado = crearModelo({
-    idMarca: idMarca.value,
-    modelo: nombreModelo.value,
-    extraPorModelo: extra.value
-  })
-
-  mensaje.value = `Modelo "${modeloCreado.modelo}" creado correctamente`
-
-  limpiarFormulario()
 }
 
 function limpiarFormulario() {
   idMarca.value = ''
   nombreModelo.value = ''
-  extra.value = ''
+  extraPorModelo.value = ''
 }
-</script>
 
+async function guardarNuevoModelo() {
+  mensaje.value = ''
+  error.value = ''
+
+  if (!idMarca.value || !nombreModelo.value.trim()) {
+    error.value = 'La marca y el nombre del modelo son obligatorios.'
+    return
+  }
+
+  try {
+    const modeloGuardado = await crearModelo({
+      idMarca: String(idMarca.value),
+      modelo: nombreModelo.value.trim(),
+      extraPorModelo: extraPorModelo.value === '' ? 0 : Number(extraPorModelo.value)
+    })
+
+    mensaje.value = `Modelo creado: ${modeloGuardado.modelo}.`
+    limpiarFormulario()
+  } catch (e) {
+    error.value = 'No se ha podido guardar el modelo.'
+  }
+}
+
+onMounted(() => {
+  cargarMarcas()
+})
+</script>
 <template>
   <section class="pagina">
     <h2>Nuevo Modelo</h2>
 
     <form class="formulario" @submit.prevent="guardarNuevoModelo">
-      <div class="grupo-campo">
-        <label for="marcaModelo">Marca</label>
-       <select v-model="idMarca">
-  <option value="">Selecciona una marca</option>
-  <option
-    v-for="marca in marcasOrdenadasPorNombre"
-    :key="marca.id"
-    :value="marca.id">
-    {{ marca.nombre }}
-  </option>
-</select>
-      </div>
+      <label>
+        Marca
+        <select v-model="idMarca">
+          <option value="">Selecciona una marca</option>
+          <option v-for="marca in marcas" :key="marca.id" :value="marca.id">
+            {{ marca.nombre }}
+          </option>
+        </select>
+      </label>
 
-      <div class="grupo-campo">
-        <label for="nombreModelo">Nombre del modelo</label>
-        <input id="nombreModelo" v-model="nombreModelo" type="text" />
-      </div>
+      <label>
+        Nombre del modelo
+        <input v-model="nombreModelo" type="text" />
+      </label>
 
-      <div class="grupo-campo">
-        <label for="extraPorModelo">Precio extra</label>
-        <input id="extraPorModelo" v-model="extraPorModelo" type="number" min="0" />
-      </div>
+      <label>
+        Extra por modelo
+        <input v-model="extraPorModelo" type="number" min="0" />
+      </label>
 
       <div class="acciones">
         <button type="submit">Guardar modelo</button>
-        <button type="button" class="secundario" @click="limpiarFormulario">
-          Limpiar
-        </button>
+        <button type="button" @click="limpiarFormulario">Limpiar</button>
       </div>
     </form>
 
-    <p v-if="error" style="color:red">{{ error }}</p>
-    <p v-if="mensaje" style="color:green">{{ mensaje }}</p>
+    <p v-if="mensaje">{{ mensaje }}</p>
+    <p v-if="error">{{ error }}</p>
   </section>
 </template>
 
@@ -90,41 +94,9 @@ function limpiarFormulario() {
 }
 
 .formulario {
-  max-width: 420px;
-}
-
-.grupo-campo {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.grupo-campo input,
-.grupo-campo select {
-  padding: 8px;
-}
-
-.acciones {
-  display: flex;
-  gap: 10px;
-}
-
-button {
-  padding: 10px 14px;
-  border: none;
-  border-radius: 6px;
-  background-color: #243447;
-  color: white;
-  cursor: pointer;
-}
-
-.secundario {
-  background-color: #7f8c8d;
-}
-
-.mensaje {
-  margin-top: 14px;
-  color: #1f6f4a;
+  gap: 12px;
+  max-width: 420px;
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <section class="pagina">
     <h2>Inicio</h2>
-    <p>Bienvenido al sistema de gestión del concesionario de renting.</p>
+    <p>Bienvenido al sistema de gestión del concesionario de renting por Diego Larrazabal Mendoza.</p>
 
     <div class="contenedor-logo">
       <img src="/favicon.ico" alt="Logo de la empresa" class="logo-empresa" />
@@ -17,12 +17,11 @@
 }
 
 .contenedor-logo {
-  margin-top: 24px;
   text-align: center;
+  margin-top: 24px;
 }
 
 .logo-empresa {
   width: 120px;
-  height: 120px;
 }
 </style>
