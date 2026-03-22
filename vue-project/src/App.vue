@@ -1,41 +1,38 @@
 <script setup>
-
-import NavigationMenu from "./components/NavigationMenu.vue"
-
+import { RouterView } from 'vue-router'
+import MenuNavegacion from './components/MenuNavegacion.vue'
 </script>
 
 <template>
+  <div class="aplicacion">
+    <MenuNavegacion />
 
-<div class="layout">
-
-<NavigationMenu />
-
-<main class="content">
-
-<RouterView />
-
-</main>
-
-</div>
-
+    <main class="contenido-principal">
+      <RouterView />
+    </main>
+  </div>
 </template>
 
 <style>
-
-body{
-margin:0;
-font-family:Arial, Helvetica, sans-serif;
+* {
+  box-sizing: border-box;
 }
 
-.layout{
-display:flex;
-min-height:100vh;
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100%;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-.content{
-flex:1;
-padding:40px;
-background:#000000;
+body {
+  background-color: #f3f5f7;
 }
 
+.contenido-principal {
+  margin-left: 240px;
+  min-height: 100vh;
+  padding: 24px;
+}
 </style>
