@@ -11,7 +11,7 @@
 
 <style scoped>
 .pagina {
-  background-color: white;
+  background-color: black;
   padding: 24px;
   border-radius: 8px;
 }

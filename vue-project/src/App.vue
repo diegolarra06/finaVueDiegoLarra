@@ -27,12 +27,13 @@ body,
 }
 
 body {
-  background-color: #f3f5f7;
+  background-color: #00182c;
 }
 
 .contenido-principal {
   margin-left: 240px;
   min-height: 100vh;
   padding: 24px;
+  background-color: #1b75cf;
 }
 </style>
