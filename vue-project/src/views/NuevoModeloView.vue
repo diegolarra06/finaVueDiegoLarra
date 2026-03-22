@@ -4,29 +4,40 @@ import { marcasOrdenadasPorNombre, crearModelo } from '../stores/tiendaRenting'
 
 const idMarca = ref('')
 const nombreModelo = ref('')
-const extraPorModelo = ref('')
-const mensajeUsuario = ref('')
+const extra = ref('')
+const mensaje = ref('')
+const error = ref('')
 
-function limpiarFormulario() {
-  idMarca.value = ''
-  nombreModelo.value = ''
-  extraPorModelo.value = ''
-}
+function guardarModelo() {
 
-function guardarNuevoModelo() {
-  if (!idMarca.value || !nombreModelo.value.trim()) {
-    mensajeUsuario.value = 'La marca y el nombre del modelo son obligatorios.'
+  error.value = ''
+  mensaje.value = ''
+
+  if (!idMarca.value) {
+    error.value = 'Debes seleccionar una marca'
+    return
+  }
+
+  if (!nombreModelo.value.trim()) {
+    error.value = 'El nombre del modelo es obligatorio'
     return
   }
 
   const modeloCreado = crearModelo({
     idMarca: idMarca.value,
     modelo: nombreModelo.value,
-    extraPorModelo: extraPorModelo.value
+    extraPorModelo: extra.value
   })
 
-  mensajeUsuario.value = `Modelo registrado correctamente: ${modeloCreado.modelo}.`
+  mensaje.value = `Modelo "${modeloCreado.modelo}" creado correctamente`
+
   limpiarFormulario()
+}
+
+function limpiarFormulario() {
+  idMarca.value = ''
+  nombreModelo.value = ''
+  extra.value = ''
 }
 </script>
 
@@ -37,16 +48,15 @@ function guardarNuevoModelo() {
     <form class="formulario" @submit.prevent="guardarNuevoModelo">
       <div class="grupo-campo">
         <label for="marcaModelo">Marca</label>
-        <select id="marcaModelo" v-model="idMarca">
-          <option value="">Selecciona una marca</option>
-          <option
-            v-for="marca in marcasOrdenadasPorNombre"
-            :key="marca.id"
-            :value="marca.id"
-          >
-            {{ marca.nombre }}
-          </option>
-        </select>
+       <select v-model="idMarca">
+  <option value="">Selecciona una marca</option>
+  <option
+    v-for="marca in marcasOrdenadasPorNombre"
+    :key="marca.id"
+    :value="marca.id">
+    {{ marca.nombre }}
+  </option>
+</select>
       </div>
 
       <div class="grupo-campo">
@@ -67,9 +77,8 @@ function guardarNuevoModelo() {
       </div>
     </form>
 
-    <p v-if="mensajeUsuario" class="mensaje">
-      {{ mensajeUsuario }}
-    </p>
+    <p v-if="error" style="color:red">{{ error }}</p>
+    <p v-if="mensaje" style="color:green">{{ mensaje }}</p>
   </section>
 </template>
 
