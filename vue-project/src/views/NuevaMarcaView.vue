@@ -5,17 +5,26 @@ import { crearMarca } from '../stores/tiendaRenting'
 const nombreMarca = ref('')
 const anioFundacion = ref('')
 const paisOrigen = ref('')
-const mensajeUsuario = ref('')
+const mensaje = ref('')
+const error = ref('')
 
-function limpiarFormulario() {
-  nombreMarca.value = ''
-  anioFundacion.value = ''
-  paisOrigen.value = ''
-}
+function guardarMarca() {
 
-function guardarNuevaMarca() {
-  if (!nombreMarca.value.trim() || !anioFundacion.value || !paisOrigen.value.trim()) {
-    mensajeUsuario.value = 'Todos los campos son obligatorios.'
+  error.value = ''
+  mensaje.value = ''
+
+  if (!nombreMarca.value.trim()) {
+    error.value = 'El nombre es obligatorio'
+    return
+  }
+
+  if (!anioFundacion.value) {
+    error.value = 'El año es obligatorio'
+    return
+  }
+
+  if (!paisOrigen.value.trim()) {
+    error.value = 'El país es obligatorio'
     return
   }
 
@@ -25,8 +34,15 @@ function guardarNuevaMarca() {
     origen: paisOrigen.value
   })
 
-  mensajeUsuario.value = `Marca registrada correctamente: ${marcaCreada.nombre}.`
+  mensaje.value = `Marca "${marcaCreada.nombre}" creada correctamente`
+
   limpiarFormulario()
+}
+
+function limpiarFormulario() {
+  nombreMarca.value = ''
+  anioFundacion.value = ''
+  paisOrigen.value = ''
 }
 </script>
 
@@ -57,10 +73,8 @@ function guardarNuevaMarca() {
         </button>
       </div>
     </form>
-
-    <p v-if="mensajeUsuario" class="mensaje">
-      {{ mensajeUsuario }}
-    </p>
+    <p v-if="error" style="color:red">{{ error }}</p>
+    <p v-if="mensaje" style="color:green">{{ mensaje }}</p>
   </section>
 </template>
 
